@@ -11,13 +11,13 @@ type alarm struct {
 	Time time.Time
 }
 
-type timer struct {
+type Timer struct {
 	Chan <-chan alarm
 	file *os.File
 }
 
 // NewTimerAt creates a timer that will trigger an alarm at the given time.
-func NewTimerAt(dev string, t time.Time) (*timer, error) {
+func NewTimerAt(dev string, t time.Time) (*Timer, error) {
 
 	c, err := NewRTC(dev)
 	if err != nil {
@@ -39,7 +39,7 @@ func NewTimerAt(dev string, t time.Time) (*timer, error) {
 	// on the floor until the client catches up.
 	ch := make(chan alarm, 1)
 	buf := make([]byte, 4)
-	timer := &timer{
+	timer := &Timer{
 		file: c.f,
 		Chan: ch,
 	}
@@ -72,7 +72,7 @@ func NewTimerAt(dev string, t time.Time) (*timer, error) {
 // TODO: Timer resolution limited to 1 second
 // TODO: What to do if d < 1 second?
 // TODO: Consider mimicking the time.After() patterns
-func NewTimer(dev string, d time.Duration) (*timer, error) {
+func NewTimer(dev string, d time.Duration) (*Timer, error) {
 
 	c, err := NewRTC(dev)
 	if err != nil {
@@ -99,7 +99,7 @@ func NewTimer(dev string, d time.Duration) (*timer, error) {
 	// copy other timer function or create a reusable function since code is the same?
 }
 
-func (t *timer) Stop() {
+func (t *Timer) Stop() {
 	//close(t.Chan) // TODO?
 	t.file.Close()
 }

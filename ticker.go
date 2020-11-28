@@ -18,7 +18,7 @@ type tick struct {
 	Missed uint32
 }
 
-type ticker struct {
+type Ticker struct {
 	buf   [1]byte
 	frame uint
 	t     time.Time
@@ -26,7 +26,7 @@ type ticker struct {
 	file  *os.File
 }
 
-func NewTicker(dev string, frequency uint) (*ticker, error) {
+func NewTicker(dev string, frequency uint) (*Ticker, error) {
 	if frequency == 0 {
 		return nil, errors.New("zero frequency for NewTicker")
 	}
@@ -51,7 +51,7 @@ func NewTicker(dev string, frequency uint) (*ticker, error) {
 	// until the client catches up.
 	ch := make(chan tick, 1)
 	buf := make([]byte, 4)
-	t := &ticker{
+	t := &Ticker{
 		file:  c.f,
 		frame: 0,
 		t:     time.Now(),
@@ -96,6 +96,6 @@ func NewTicker(dev string, frequency uint) (*ticker, error) {
 	return t, nil
 }
 
-func (t *ticker) Stop() {
+func (t *Ticker) Stop() {
 	t.file.Close()
 }
