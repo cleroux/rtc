@@ -1,6 +1,6 @@
 # rtc
 
-Go module for using a hardware Real-Time Clock (RTC) device in Linux.
+Go (Golang) module for using a hardware Real-Time Clock (RTC) device in Linux.
 
 ## Installation
 
