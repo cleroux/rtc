@@ -18,7 +18,6 @@ type Timer struct {
 
 // NewTimerAt creates a timer that will trigger an alarm at the given time.
 func NewTimerAt(dev string, t time.Time) (*Timer, error) {
-
 	c, err := NewRTC(dev)
 	if err != nil {
 		return nil, err
@@ -59,9 +58,8 @@ func NewTimerAt(dev string, t time.Time) (*Timer, error) {
 		//fmt.Printf("r: 0x%X, types: 0x%X\n", r, irqTypes)
 		//cnt := r >> 8
 
-		now := time.Now()
 		ch <- alarm{
-			Time: now,
+			Time: time.Now(),
 		}
 		close(ch)
 	}()
@@ -73,7 +71,6 @@ func NewTimerAt(dev string, t time.Time) (*Timer, error) {
 // TODO: What to do if d < 1 second?
 // TODO: Consider mimicking the time.After() patterns
 func NewTimer(dev string, d time.Duration) (*Timer, error) {
-
 	c, err := NewRTC(dev)
 	if err != nil {
 		return nil, err
@@ -93,10 +90,28 @@ func NewTimer(dev string, d time.Duration) (*Timer, error) {
 		_ = c.Close()
 		return nil, err
 	}
-	return nil, nil
 
-	// TODO: Finish this function
-	// copy other timer function or create a reusable function since code is the same?
+	ch := make(chan alarm, 1)
+	buf := make([]byte, 4)
+	timer := &Timer{
+		file: c.f,
+		Chan: ch,
+	}
+
+	go func() {
+		_, err := syscall.Read(int(c.f.Fd()), buf)
+		if err != nil {
+			fmt.Printf("got error reading interrupt, returning\n")
+			return
+		}
+
+		ch <- alarm{
+			Time: time.Now(),
+		}
+		close(ch)
+	}()
+
+	return timer, nil
 }
 
 func (t *Timer) Stop() {
