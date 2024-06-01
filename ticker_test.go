@@ -1,7 +1,6 @@
 package rtc
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -9,21 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-func ExampleNewTicker() {
-	ticker, err := NewTicker("/dev/rtc", 2)
-	if err != nil {
-		panic(err)
-	}
-	defer ticker.Stop()
-
-	for {
-		select {
-		case tick := <-ticker.Chan:
-			fmt.Printf("Tick.  Frame:%d Time:%v Delta:%v Over:%d\n", tick.Frame, tick.Time, tick.Delta, tick.Missed)
-		}
-	}
-}
 
 func TestTicker(t *testing.T) {
 

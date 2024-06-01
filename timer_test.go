@@ -1,28 +1,12 @@
-package rtc_test
+package rtc
 
 import (
-	"fmt"
 	"testing"
 	"time"
-
-	"github.com/cleroux/rtc"
 )
 
-func ExampleNewTimer() {
-	t, err := rtc.NewTimer("/dev/rtc", time.Minute)
-	if err != nil {
-		panic(err)
-	}
-	defer t.Stop()
-
-	select {
-	case alarm := <-t.Chan:
-		fmt.Printf("Alarm.  Time:%v\n", alarm.Time)
-	}
-}
-
 func TestNewTimerAt(t *testing.T) {
-	timer, err := rtc.NewTimerAt("/dev/rtc", time.Now().UTC().Add(time.Second))
+	timer, err := NewTimerAt("/dev/rtc", time.Now().UTC().Add(time.Second))
 	if err != nil {
 		t.Error("failed to start timer", err)
 		t.FailNow()
@@ -37,7 +21,7 @@ func TestNewTimerAt(t *testing.T) {
 }
 
 func TestNewTimer(t *testing.T) {
-	timer, err := rtc.NewTimer("/dev/rtc", time.Second)
+	timer, err := NewTimer("/dev/rtc", time.Second)
 	if err != nil {
 		t.Error("failed to start timer", err)
 		t.FailNow()

@@ -15,15 +15,15 @@ interrupts.
 
 The following example creates a ticker that fires at 2 Hz.
 ```go
-t, err := rtc.NewTicker("/dev/rtc", 2)
+ticker, err := rtc.NewTicker("/dev/rtc", 2)
 if err != nil {
   panic(err)
 }
-defer t.Stop()
+defer ticker.Stop()
 
 for {
   select {
-  case tick := <-t.Chan:
+  case tick := <-ticker.Chan:
     fmt.Printf("Tick.  Frame:%d Time:%v Delta:%v Missed:%d\n", tick.Frame, tick.Time, tick.Delta, tick.Missed)
   }
 }
@@ -32,14 +32,14 @@ for {
 The following example sets an alarm for 5 seconds in the future and waits for
 the alarm to fire.
 ```go
-t, err := rtc.NewTimer("/dev/rtc", time.Now().Add(time.Second * 5))
+timer, err := rtc.NewTimer("/dev/rtc", time.Now().Add(time.Second * 5))
 if err != nil {
   panic(err)
 }
-defer t.Stop()
+defer timer.Stop()
 
 select {
-case alarm := <-t.Chan:
+case alarm := <-timer.Chan:
   fmt.Printf("Alarm.  Time:%v\n", alarm.Time)
 }
 ```
