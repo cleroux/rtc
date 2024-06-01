@@ -9,41 +9,48 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestTicker checks that the ticker fires the expected number of times in one second.
 func TestTicker(t *testing.T) {
+	const frequencyHz uint = 2
 
-	var freq uint = 2
-	interval := time.Duration(time.Second.Nanoseconds() / int64(freq))
+	// Calculate the expected time interval between ticks
+	interval := time.Duration(time.Second.Nanoseconds() / int64(frequencyHz))
 
-	var cnt uint
+	var tickCount uint
 	var prevTick tick
 
-	done := make(chan bool, 1)
+	// Sleep for 1 second + margin for timing error, then signal to end the test.
+	done := make(chan bool)
 	go func() {
 		time.Sleep(time.Second + interval/2)
-		done <- true
+		close(done)
 	}()
 
-	ticker, err := NewTicker(devRtc, freq)
+	ticker, err := NewTicker(devRtc, frequencyHz)
 	require.NoError(t, err)
 	defer ticker.Stop()
 
+	// Count ticks
 loop:
 	for {
 		select {
 		case <-done:
 			break loop
 		case tick := <-ticker.Chan:
+			// Expect we have not missed any ticks
 			assert.Equal(t, uint32(0), tick.Missed)
-			assert.Equal(t, cnt, tick.Frame)
-			//assert.WithinDuration(t, interval, tick.Delta, time.Millisecond) // TODO
+
+			// Expect Frame to be the same as the tick count since the test is only one second and
+			// the frame counter will not roll over.
+			assert.Equal(t, tickCount, tick.Frame)
+
 			if !prevTick.Time.Equal(time.Time{}) {
 				assert.WithinDuration(t, prevTick.Time.Add(interval), tick.Time, time.Millisecond)
 			}
-			cnt++
-		case <-time.After(time.Second):
-			break
+			tickCount++
 		}
 	}
 
-	assert.Equal(t, freq, cnt)
+	// Expect the tick count to equal the ticker's frequency.
+	assert.Equal(t, frequencyHz, tickCount)
 }
