@@ -17,7 +17,7 @@ func TestTicker(t *testing.T) {
 	interval := time.Duration(time.Second.Nanoseconds() / int64(frequencyHz))
 
 	var tickCount uint
-	var prevTick tick
+	var prevTick rtcTick
 
 	// Sleep for 1 second + margin for timing error, then signal to end the test.
 	done := make(chan bool)

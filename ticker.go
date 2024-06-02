@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package rtc
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-type tick struct {
+type rtcTick struct {
 	Time   time.Time
 	Delta  time.Duration
 	Frame  uint
@@ -19,10 +20,10 @@ type tick struct {
 }
 
 type Ticker struct {
-	buf   [1]byte
 	frame uint
 	t     time.Time
-	Chan  <-chan tick
+	done  chan struct{}
+	Chan  <-chan rtcTick
 	file  *os.File
 }
 
@@ -49,9 +50,10 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 	// Give the channel a 1-element time buffer.
 	// If the client falls behind while reading, we drop ticks
 	// until the client catches up.
-	ch := make(chan tick, 1)
+	ch := make(chan rtcTick, 1)
 	buf := make([]byte, 4)
 	t := &Ticker{
+		done:  make(chan struct{}),
 		file:  c.f,
 		frame: 0,
 		t:     time.Now(),
@@ -59,6 +61,7 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 	}
 
 	go func() {
+	loop:
 		for {
 			_, err := syscall.Read(int(c.f.Fd()), buf)
 			if err != nil {
@@ -74,11 +77,17 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 			cnt := r >> 8
 
 			now := time.Now()
-			ch <- tick{
+			tic := rtcTick{
 				Time:   now,
 				Delta:  now.Sub(t.t),
 				Frame:  t.frame,
 				Missed: cnt - 1,
+			}
+
+			select {
+			case ch <- tic:
+			case <-t.done:
+				break loop
 			}
 
 			// Save current time
@@ -91,11 +100,12 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 			}
 		}
 		close(ch)
+		_ = t.file.Close()
 	}()
 
 	return t, nil
 }
 
 func (t *Ticker) Stop() {
-	t.file.Close()
+	close(t.done)
 }
