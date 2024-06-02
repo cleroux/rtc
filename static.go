@@ -20,7 +20,7 @@ func Epoch(dev string) (epoch uint, err error) {
 	return c.Epoch()
 }
 
-// Epoch sets the epoch on the specified real-time clock device.
+// SetEpoch sets the epoch on the specified real-time clock device.
 func SetEpoch(dev string, epoch uint) (err error) {
 	c, err := NewRTC(dev)
 	if err != nil {
