@@ -1,79 +1,15 @@
 package rtc
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/require"
 )
-
-func ExampleClocks() {
-	if cs, err := Clocks(); err == nil {
-		for _, c := range cs {
-			fmt.Printf("Clock found: %s\n", c)
-		}
-	}
-}
-
-func ExampleTime() {
-	if t, err := Time("/dev/rtc"); err == nil {
-		fmt.Printf("Current time: %v\n", t)
-	}
-}
-
-func ExampleSetTime() {
-	if err := SetTime("/dev/rtc", time.Now()); err != nil {
-		panic(err)
-	}
-}
-
-func ExampleEpoch() {
-	if e, err := Epoch("/dev/rtc"); err == nil {
-		fmt.Printf("Current epoch: %d\n", e)
-	}
-}
-
-func ExampleSetEpoch() {
-	if err := SetEpoch("/dev/rtc", 99); err != nil {
-		panic(err)
-	}
-}
-
-func ExampleAlarm() {
-	if t, err := Alarm("/dev/rtc"); err == nil {
-		fmt.Printf("Current alarm time: %v\n", t)
-	}
-}
-
-func ExampleSetAlarm() {
-	if err := SetAlarm("/dev/rtc", time.Now().Add(time.Minute)); err != nil {
-		panic(err)
-	}
-}
-
-func ExampleSetAlarmInterrupt() {
-	if err := SetAlarmInterrupt("/dev/rtc", true); err != nil {
-		panic(err)
-	}
-}
-
-func ExampleFrequency() {
-	if f, err := Frequency("/dev/rtc"); err == nil {
-		fmt.Printf("Frequency: %d\n", f)
-	}
-}
-
-func ExampleSetFrequency() {
-	if err := SetFrequency("/dev/rtc", 64); err != nil {
-		panic(err)
-	}
-}
 
 // procDriverRtc reads /proc/driver/rtc and returns a map of the values it contains.
 func procDriverRtc(t *testing.T) (values map[string]string) {
