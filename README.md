@@ -71,6 +71,19 @@ if err != nil {
 fmt.Printf("Current time: %v\n", t)
 ```
 
+## Running Tests
+
+Since accessing the Real-Time Clock requires root privileges, tests must also run as root.
+```shell
+sudo make test
+```
+The `go` executable needs to be found in the `root` user's `PATH`.
+Edit `/etc/sudoers` with the `visudo` command and add the location of the `go` executable to `secure_path`.  
+For example:
+```
+`Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/usr/local/go/bin"
+```
+
 ## References
 
 [1] [The Linux kernel user's and administrator's guide: Real Time Clock (RTC) Drivers for Linux](https://www.kernel.org/doc/html/latest/admin-guide/rtc.html)  
