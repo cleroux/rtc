@@ -34,8 +34,7 @@ func TestRtcEpoch(t *testing.T) {
 	// Read the current epoch value
 	curEpoch, err := c.Epoch()
 	if strings.Contains(err.Error(), "inappropriate ioctl for device") {
-		// Epoch not supported by this hardware
-		t.SkipNow()
+		t.Skipf("Epoch() not supported by this hardware")
 	}
 	require.NoError(t, err)
 	require.NotZero(t, curEpoch)
