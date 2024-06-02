@@ -1,13 +1,12 @@
 package rtc
 
 import (
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ import (
 func procDriverRtc(t *testing.T) (values map[string]string) {
 	t.Helper()
 
-	b, err := ioutil.ReadFile("/proc/driver/rtc")
+	b, err := os.ReadFile("/proc/driver/rtc")
 	require.NoError(t, err, "Unable to read /proc/driver/rtc")
 
 	lines := strings.Split(string(b), "\n")
@@ -35,7 +34,7 @@ func procDriverRtc(t *testing.T) (values map[string]string) {
 func sysClassRtc(t *testing.T) (value string) {
 	t.Helper()
 
-	b, err := ioutil.ReadFile("/sys/class/rtc/rtc0")
+	b, err := os.ReadFile("/sys/class/rtc/rtc0")
 	require.NoError(t, err)
 	return string(b)
 }
