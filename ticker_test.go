@@ -26,7 +26,7 @@ func TestTicker(t *testing.T) {
 		close(done)
 	}()
 
-	ticker, err := NewTicker(devRtc, frequencyHz)
+	ticker, err := NewTicker("/dev/rtc", frequencyHz)
 	require.NoError(t, err)
 	defer ticker.Stop()
 
