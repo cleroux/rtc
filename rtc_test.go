@@ -1,7 +1,6 @@
 package rtc
 
 import (
-	"fmt"
 	"math/rand"
 	"strings"
 	"testing"
@@ -12,22 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const devRtc = "/dev/rtc"
-
-func ExampleRTC() {
-	c, err := NewRTC(devRtc)
-	if err != nil {
-		return
-	}
-	defer c.Close()
-
-	if t, err := c.Time(); err == nil {
-		fmt.Printf("Current RTC Time: %v\n", t)
-	}
-}
-
 func TestRtcEpoch(t *testing.T) {
-	c, err := NewRTC(devRtc)
+	c, err := NewRTC("/dev/rtc")
 	require.NoError(t, err)
 	defer c.Close()
 
@@ -54,7 +39,7 @@ func TestRtcEpoch(t *testing.T) {
 }
 
 func TestRtcTime(t *testing.T) {
-	c, err := NewRTC(devRtc)
+	c, err := NewRTC("/dev/rtc")
 	require.NoError(t, err)
 	defer c.Close()
 
@@ -80,7 +65,7 @@ func TestRtcTime(t *testing.T) {
 }
 
 func TestRtcFrequency(t *testing.T) {
-	c, err := NewRTC(devRtc)
+	c, err := NewRTC("/dev/rtc")
 	require.NoError(t, err)
 	defer c.Close()
 

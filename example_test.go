@@ -30,6 +30,20 @@ func ExampleNewTimer() {
 	fmt.Printf("Alarm.  Time:%v\n", alarm.Time)
 }
 
+func ExampleRTC() {
+	clock, err := rtc.NewRTC("/dev/rtc")
+	if err != nil {
+		panic(err)
+	}
+	defer clock.Close()
+
+	t, err := clock.Time()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Current RTC Time: %v\n", t)
+}
+
 func ExampleClocks() {
 	clocks, err := rtc.Clocks()
 	if err != nil {
