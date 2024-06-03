@@ -17,31 +17,26 @@ The following example creates a ticker that fires at 2 Hz.
 ```go
 ticker, err := rtc.NewTicker("/dev/rtc", 2)
 if err != nil {
-  panic(err)
+    panic(err)
 }
 defer ticker.Stop()
 
-for {
-  select {
-  case tick := <-ticker.Chan:
+for tick := range ticker.Chan {
     fmt.Printf("Tick.  Frame:%d Time:%v Delta:%v Missed:%d\n", tick.Frame, tick.Time, tick.Delta, tick.Missed)
-  }
 }
 ```
 
 The following example sets an alarm for 5 seconds in the future and waits for
 the alarm to fire.
 ```go
-timer, err := rtc.NewTimer("/dev/rtc", time.Now().Add(time.Second * 5))
+timer, err := rtc.NewTimer("/dev/rtc", time.Minute)
 if err != nil {
-  panic(err)
+    panic(err)
 }
 defer timer.Stop()
 
-select {
-case alarm := <-timer.Chan:
-  fmt.Printf("Alarm.  Time:%v\n", alarm.Time)
-}
+alarm := <-timer.Chan
+fmt.Printf("Alarm.  Time:%v\n", alarm.Time)
 ```
 
 If more flexible programming of the RTC is needed, `rtc.NewRTC()` instantiates
