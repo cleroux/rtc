@@ -5,19 +5,19 @@ import (
 	"time"
 )
 
-// Clocks returns a list of real-time clocks in the system.
-func Clocks() (devices []string, err error) {
+// GetClocks returns a list of real-time clocks in the system.
+func GetClocks() (devices []string, err error) {
 	return filepath.Glob("/dev/rtc*")
 }
 
-// Epoch reads the epoch from the specified real-time clock device.
-func Epoch(dev string) (epoch uint, err error) {
+// GetEpoch reads the epoch from the specified real-time clock device.
+func GetEpoch(dev string) (epoch uint, err error) {
 	c, err := NewRTC(dev)
 	if err != nil {
 		return 0, err
 	}
 	defer c.Close()
-	return c.Epoch()
+	return c.GetEpoch()
 }
 
 // SetEpoch sets the epoch on the specified real-time clock device.
@@ -30,14 +30,14 @@ func SetEpoch(dev string, epoch uint) (err error) {
 	return c.SetEpoch(epoch)
 }
 
-// Time reads the time from the specified real-time clock device.
-func Time(dev string) (t time.Time, err error) {
+// GetTime reads the time from the specified real-time clock device.
+func GetTime(dev string) (t time.Time, err error) {
 	c, err := NewRTC(dev)
 	if err != nil {
 		return time.Time{}, err
 	}
 	defer c.Close()
-	return c.Time()
+	return c.GetTime()
 }
 
 // SetTime sets the time for the specified real-time clock device.
@@ -50,14 +50,14 @@ func SetTime(dev string, t time.Time) (err error) {
 	return c.SetTime(t)
 }
 
-// Frequency returns the frequency of the specified real-time clock device.
-func Frequency(dev string) (frequency uint, err error) {
+// GetFrequency returns the frequency of the specified real-time clock device.
+func GetFrequency(dev string) (frequency uint, err error) {
 	c, err := NewRTC(dev)
 	if err != nil {
 		return 0, err
 	}
 	defer c.Close()
-	return c.Frequency()
+	return c.GetFrequency()
 }
 
 // SetFrequency sets the periodic interrupt frequency of the specified real-time clock device.
@@ -100,14 +100,14 @@ func SetUpdateInterrupt(dev string, enable bool) (err error) {
 	return c.SetUpdateInterrupt(enable)
 }
 
-// Alarm returns the alarm time for the specified real-time clock device.
-func Alarm(dev string) (t time.Time, err error) {
+// GetAlarm returns the alarm time for the specified real-time clock device.
+func GetAlarm(dev string) (t time.Time, err error) {
 	c, err := NewRTC(dev)
 	if err != nil {
 		return time.Time{}, err
 	}
 	defer c.Close()
-	return c.Alarm()
+	return c.GetAlarm()
 }
 
 // SetAlarm sets the alarm time for the specified real-time clock device.
@@ -120,14 +120,14 @@ func SetAlarm(dev string, t time.Time) (err error) {
 	return c.SetAlarm(t)
 }
 
-// WakeAlarm returns the current state of the wake alarm for the specified real-time clock device.
-func WakeAlarm(dev string) (enabled bool, pending bool, t time.Time, err error) {
+// GetWakeAlarm returns the current state of the wake alarm for the specified real-time clock device.
+func GetWakeAlarm(dev string) (enabled bool, pending bool, t time.Time, err error) {
 	c, err := NewRTC(dev)
 	if err != nil {
 		return false, false, time.Time{}, err
 	}
 	defer c.Close()
-	return c.WakeAlarm()
+	return c.GetWakeAlarm()
 }
 
 // SetWakeAlarm sets the wake alarm time for the specified real-time clock device.

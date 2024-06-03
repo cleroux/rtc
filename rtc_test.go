@@ -17,7 +17,7 @@ func TestRtcEpoch(t *testing.T) {
 	defer c.Close()
 
 	// Read the current epoch value
-	curEpoch, err := c.Epoch()
+	curEpoch, err := c.GetEpoch()
 	if strings.Contains(err.Error(), "inappropriate ioctl for device") {
 		t.Skipf("Epoch() not supported by this hardware")
 	}
@@ -30,7 +30,7 @@ func TestRtcEpoch(t *testing.T) {
 	require.NoError(t, c.SetEpoch(newEpoch))
 
 	// Read the new epoch value
-	readEpoch, err := c.Epoch()
+	readEpoch, err := c.GetEpoch()
 	require.NoError(t, err)
 	assert.Equal(t, newEpoch, readEpoch)
 
@@ -43,7 +43,7 @@ func TestRtcTime(t *testing.T) {
 	require.NoError(t, err)
 	defer c.Close()
 
-	curTime, err := c.Time()
+	curTime, err := c.GetTime()
 	require.NoError(t, err)
 
 	// Change the time
@@ -53,7 +53,7 @@ func TestRtcTime(t *testing.T) {
 	require.NoError(t, c.SetTime(newTime))
 
 	// Read the time
-	readTime, err := c.Time()
+	readTime, err := c.GetTime()
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, readTime.UnixNano(), newTime.UnixNano())
 
@@ -70,7 +70,7 @@ func TestRtcFrequency(t *testing.T) {
 	defer c.Close()
 
 	// Read the current frequency
-	curFreq, err := c.Frequency()
+	curFreq, err := c.GetFrequency()
 	require.NoError(t, err)
 
 	// Set a new frequency
@@ -78,7 +78,7 @@ func TestRtcFrequency(t *testing.T) {
 	require.NoError(t, c.SetFrequency(newFreq))
 
 	// Read the frequency
-	readFreq, err := c.Frequency()
+	readFreq, err := c.GetFrequency()
 	require.NoError(t, err)
 	assert.Equal(t, newFreq, readFreq)
 

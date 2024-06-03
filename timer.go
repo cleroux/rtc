@@ -1,22 +1,27 @@
+//go:build !windows
+// +build !windows
+
 package rtc
 
 import (
 	"fmt"
-	"os"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
 
-type alarm struct {
+type Alarm struct {
 	Time time.Time
 }
 
 type Timer struct {
-	Chan <-chan alarm
-	file *os.File
+	done  chan struct{}
+	rtc   *RTC
+	fired atomic.Bool
+	C     <-chan Alarm
 }
 
-// NewTimerAt creates a timer that will trigger an alarm at the given time.
+// NewTimerAt creates a new Timer that will send an Alarm on its channel after the given time.
 func NewTimerAt(dev string, t time.Time) (*Timer, error) {
 	c, err := NewRTC(dev)
 	if err != nil {
@@ -36,21 +41,28 @@ func NewTimerAt(dev string, t time.Time) (*Timer, error) {
 	// Give the channel a 1-element time buffer.
 	// If the client falls behind while reading, we drop ticks
 	// on the floor until the client catches up.
-	ch := make(chan alarm, 1)
-	buf := make([]byte, 4)
+	ch := make(chan Alarm, 1)
 	timer := &Timer{
-		file: c.f,
-		Chan: ch,
+		done: make(chan struct{}),
+		rtc:  c,
+		C:    ch,
 	}
 
 	go func() {
-		_, err := syscall.Read(int(c.f.Fd()), buf)
+		buf := make([]byte, 4)
+		_, err := syscall.Read(c.fd, buf)
 		if err != nil {
 			fmt.Printf("got error reading interrupt, returning\n")
 			return
 		}
 
-		// TODO: Clean up these comments?
+		select {
+		case <-timer.done:
+		// Don't send alarm if Stop() has been called
+		default:
+			timer.fired.Store(true)
+		}
+
 		// buf[0] = bit mask encoding the types of interrupt that occurred.
 		// buf[1:3] = number of interrupts since last read
 		//r := binary.LittleEndian.Uint32(buf)
@@ -58,25 +70,22 @@ func NewTimerAt(dev string, t time.Time) (*Timer, error) {
 		//fmt.Printf("r: 0x%X, types: 0x%X\n", r, irqTypes)
 		//cnt := r >> 8
 
-		ch <- alarm{
+		ch <- Alarm{
 			Time: time.Now(),
 		}
-		close(ch)
 	}()
 
 	return timer, nil
 }
 
-// TODO: Timer resolution limited to 1 second
-// TODO: What to do if d < 1 second?
-// TODO: Consider mimicking the time.After() patterns
+// NewTimer creates a new Timer that will send an Alarm with the current time on its channel after at least duration d.
 func NewTimer(dev string, d time.Duration) (*Timer, error) {
 	c, err := NewRTC(dev)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := c.Time()
+	t, err := c.GetTime()
 	if err != nil {
 		return nil, err
 	}
@@ -91,30 +100,53 @@ func NewTimer(dev string, d time.Duration) (*Timer, error) {
 		return nil, err
 	}
 
-	ch := make(chan alarm, 1)
+	ch := make(chan Alarm, 1)
 	buf := make([]byte, 4)
 	timer := &Timer{
-		file: c.f,
-		Chan: ch,
+		done: make(chan struct{}),
+		rtc:  c,
+		C:    ch,
 	}
 
 	go func() {
-		_, err := syscall.Read(int(c.f.Fd()), buf)
+		_, err := syscall.Read(c.fd, buf)
 		if err != nil {
-			fmt.Printf("got error reading interrupt, returning\n")
+			fmt.Printf("got error reading interrupt, returning: %v\n", err)
 			return
 		}
 
-		ch <- alarm{
+		select {
+		case <-timer.done:
+		// Don't send alarm if Stop() has been called
+		default:
+		}
+
+		ch <- Alarm{
 			Time: time.Now(),
 		}
-		close(ch)
 	}()
 
 	return timer, nil
 }
 
-func (t *Timer) Stop() {
-	//close(t.Chan) // TODO?
-	t.file.Close()
+// Stop prevents the Timer from firing.
+// It returns true if the call stops the timer, false if the timer has already
+// expired or been stopped.
+// Stop does not close the channel, to prevent a read from the channel succeeding
+// incorrectly.
+//
+// To ensure the channel is empty after a call to Stop, check the
+// return value and drain the channel.
+// For example, assuming the program has not received from t.C already:
+//
+//	if !t.Stop() {
+//		<-t.C
+//	}
+//
+// This cannot be done concurrent to other receives from the Timer's
+// channel or other calls to the Timer's Stop method.
+func (t *Timer) Stop() bool {
+	close(t.done)
+	_ = t.rtc.Close()
+	return t.fired.Load()
 }

@@ -7,12 +7,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"os"
+	"sync"
 	"syscall"
 	"time"
 )
 
-type rtcTick struct {
+type Tick struct {
 	Time   time.Time
 	Delta  time.Duration
 	Frame  uint
@@ -20,11 +20,12 @@ type rtcTick struct {
 }
 
 type Ticker struct {
-	frame uint
-	t     time.Time
 	done  chan struct{}
-	Chan  <-chan rtcTick
-	file  *os.File
+	frame uint
+	rtc   *RTC
+	t     time.Time
+	wait  sync.WaitGroup
+	C     <-chan Tick
 }
 
 func NewTicker(dev string, frequency uint) (*Ticker, error) {
@@ -50,22 +51,30 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 	// Give the channel a 1-element time buffer.
 	// If the client falls behind while reading, we drop ticks
 	// until the client catches up.
-	ch := make(chan rtcTick, 1)
+	ch := make(chan Tick, 1)
 	buf := make([]byte, 4)
 	t := &Ticker{
 		done:  make(chan struct{}),
-		file:  c.f,
+		rtc:   c,
 		frame: 0,
 		t:     time.Now(),
-		Chan:  ch,
+		C:     ch,
 	}
 
+	t.wait.Add(1)
 	go func() {
+		defer t.wait.Done()
 	loop:
 		for {
-			_, err := syscall.Read(int(c.f.Fd()), buf)
+			select {
+			case <-t.done:
+				break loop
+			default:
+			}
+
+			_, err := syscall.Read(c.fd, buf)
 			if err != nil {
-				fmt.Printf("got error reading interrupt, breaking loop\n")
+				fmt.Printf("got error reading interrupt, breaking loop: %v\n", err)
 				break
 			}
 
@@ -77,17 +86,11 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 			cnt := r >> 8
 
 			now := time.Now()
-			tic := rtcTick{
+			ch <- Tick{
 				Time:   now,
 				Delta:  now.Sub(t.t),
 				Frame:  t.frame,
 				Missed: cnt - 1,
-			}
-
-			select {
-			case ch <- tic:
-			case <-t.done:
-				break loop
 			}
 
 			// Save current time
@@ -99,8 +102,10 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 				t.frame = 0
 			}
 		}
-		close(ch)
-		_ = t.file.Close()
+
+		// Disable interrupts and close RTC device
+		_ = c.SetPeriodicInterrupt(false)
+		_ = c.Close()
 	}()
 
 	return t, nil
@@ -108,4 +113,5 @@ func NewTicker(dev string, frequency uint) (*Ticker, error) {
 
 func (t *Ticker) Stop() {
 	close(t.done)
+	t.wait.Wait()
 }

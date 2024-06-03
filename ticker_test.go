@@ -17,7 +17,7 @@ func TestTicker(t *testing.T) {
 	interval := time.Duration(time.Second.Nanoseconds() / int64(frequencyHz))
 
 	var tickCount uint
-	var prevTick rtcTick
+	var prevTick Tick
 
 	// Sleep for 1 second + margin for timing error, then signal to end the test.
 	done := make(chan bool)
@@ -36,7 +36,7 @@ loop:
 		select {
 		case <-done:
 			break loop
-		case tick := <-ticker.Chan:
+		case tick := <-ticker.C:
 			// Expect we have not missed any ticks
 			assert.Equal(t, uint32(0), tick.Missed)
 

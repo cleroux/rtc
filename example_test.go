@@ -14,7 +14,7 @@ func ExampleNewTicker() {
 	}
 	defer ticker.Stop()
 
-	for tick := range ticker.Chan {
+	for tick := range ticker.C {
 		fmt.Printf("Tick.  Frame:%d Time:%v Delta:%v Missed:%d\n", tick.Frame, tick.Time, tick.Delta, tick.Missed)
 	}
 }
@@ -26,7 +26,7 @@ func ExampleNewTimer() {
 	}
 	defer timer.Stop()
 
-	alarm := <-timer.Chan
+	alarm := <-timer.C
 	fmt.Printf("Alarm.  Time:%v\n", alarm.Time)
 }
 
@@ -37,15 +37,15 @@ func ExampleRTC() {
 	}
 	defer clock.Close()
 
-	t, err := clock.Time()
+	t, err := clock.GetTime()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Current RTC Time: %v\n", t)
 }
 
-func ExampleClocks() {
-	clocks, err := rtc.Clocks()
+func ExampleGetClocks() {
+	clocks, err := rtc.GetClocks()
 	if err != nil {
 		panic(err)
 	}
@@ -54,8 +54,8 @@ func ExampleClocks() {
 	}
 }
 
-func ExampleTime() {
-	t, err := rtc.Time("/dev/rtc")
+func ExampleGetTime() {
+	t, err := rtc.GetTime("/dev/rtc")
 	if err != nil {
 		panic(err)
 	}
@@ -68,8 +68,8 @@ func ExampleSetTime() {
 	}
 }
 
-func ExampleEpoch() {
-	epoch, err := rtc.Epoch("/dev/rtc")
+func ExampleGetEpoch() {
+	epoch, err := rtc.GetEpoch("/dev/rtc")
 	if err != nil {
 		panic(err)
 	}
@@ -82,8 +82,8 @@ func ExampleSetEpoch() {
 	}
 }
 
-func ExampleAlarm() {
-	t, err := rtc.Alarm("/dev/rtc")
+func ExampleGetAlarm() {
+	t, err := rtc.GetAlarm("/dev/rtc")
 	if err != nil {
 		panic(err)
 	}
@@ -102,8 +102,8 @@ func ExampleSetAlarmInterrupt() {
 	}
 }
 
-func ExampleFrequency() {
-	frequency, err := rtc.Frequency("/dev/rtc")
+func ExampleGetFrequency() {
+	frequency, err := rtc.GetFrequency("/dev/rtc")
 	if err != nil {
 		panic(err)
 	}

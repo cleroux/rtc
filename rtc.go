@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 // Package rtc facilitates working with real-time clocks (RTCs).
 // High level functions such as NewTicker and NewTimer encapsulate the details
 // of working with the RTC while providing interfaces that are similar to Go's
@@ -19,7 +22,6 @@ package rtc
 
 import (
 	"fmt"
-	"os"
 	"syscall"
 	"time"
 	"unsafe"
@@ -51,31 +53,31 @@ func (t timeRtc) rtcTime() *unix.RTCTime {
 }
 
 type RTC struct {
-	f *os.File
+	fd int
 }
 
 // NewRTC opens a real-time clock device.
 func NewRTC(dev string) (*RTC, error) {
-	f, err := os.Open(dev)
+	fd, err := syscall.Open(dev, syscall.O_RDWR, uint32(0600))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open rtc: %w", err)
 	}
 	return &RTC{
-		f: f,
+		fd: fd,
 	}, nil
 }
 
 // Close closes a real-time clock device.
 func (c *RTC) Close() (err error) {
-	err = c.f.Close()
-	c.f = nil
+	err = syscall.Close(c.fd)
+	c.fd = 0
 	return err
 }
 
-// Epoch returns the real-time clock's epoch.
-func (c *RTC) Epoch() (epoch uint, err error) {
+// GetEpoch returns the real-time clock's epoch.
+func (c *RTC) GetEpoch() (epoch uint, err error) {
 	e := new(uint32)
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_EPOCH_READ, uintptr(unsafe.Pointer(e))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_EPOCH_READ, uintptr(unsafe.Pointer(e))); errno != 0 {
 		return 0, fmt.Errorf("failed to read real-time clock epoch: %w", errno)
 	}
 	return uint(*e), nil
@@ -83,16 +85,16 @@ func (c *RTC) Epoch() (epoch uint, err error) {
 
 // SetEpoch sets the real-time clock's epoch.
 func (c *RTC) SetEpoch(epoch uint) (err error) {
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_EPOCH_SET, uintptr(epoch)); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_EPOCH_SET, uintptr(epoch)); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock epoch: %w", errno)
 	}
 	return nil
 }
 
-// Time returns the specified real-time clock device time.
-func (c *RTC) Time() (t time.Time, err error) {
+// GetTime returns the specified real-time clock device time.
+func (c *RTC) GetTime() (t time.Time, err error) {
 	tm := new(rtcTime)
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_RD_TIME, uintptr(unsafe.Pointer(tm))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_RD_TIME, uintptr(unsafe.Pointer(tm))); errno != 0 {
 		return time.Time{}, fmt.Errorf("failed to read real-time clock time: %w", errno)
 	}
 	return tm.time(), nil
@@ -101,16 +103,16 @@ func (c *RTC) Time() (t time.Time, err error) {
 // SetTime sets the time for the specified real-time clock device.
 func (c *RTC) SetTime(t time.Time) (err error) {
 	tm := timeRtc{Time: t}.rtcTime()
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_SET_TIME, uintptr(unsafe.Pointer(tm))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_SET_TIME, uintptr(unsafe.Pointer(tm))); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock time: %w", errno)
 	}
 	return nil
 }
 
-// Frequency returns the periodic interrupt frequency.
-func (c *RTC) Frequency() (frequency uint, err error) {
+// GetFrequency returns the periodic interrupt frequency.
+func (c *RTC) GetFrequency() (frequency uint, err error) {
 	f := new(uint)
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_IRQP_READ, uintptr(unsafe.Pointer(f))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_IRQP_READ, uintptr(unsafe.Pointer(f))); errno != 0 {
 		return 0, fmt.Errorf("failed to read real-time clock frequency: %w", errno)
 	}
 	return *f, nil
@@ -118,7 +120,7 @@ func (c *RTC) Frequency() (frequency uint, err error) {
 
 // SetFrequency sets the frequency of the real-time clock's periodic interrupt.
 func (c *RTC) SetFrequency(frequency uint) (err error) {
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_IRQP_SET, uintptr(frequency)); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_IRQP_SET, uintptr(frequency)); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock frequency: %w", errno)
 	}
 	return nil
@@ -130,7 +132,7 @@ func (c *RTC) SetPeriodicInterrupt(enable bool) (err error) {
 	if !enable {
 		op = unix.RTC_PIE_OFF
 	}
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), uintptr(op), 0); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), uintptr(op), 0); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock interrupts: %w", errno)
 	}
 	return nil
@@ -142,7 +144,7 @@ func (c *RTC) SetAlarmInterrupt(enable bool) (err error) {
 	if !enable {
 		op = unix.RTC_AIE_OFF
 	}
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), uintptr(op), 0); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), uintptr(op), 0); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock alarm interrupt: %w", errno)
 	}
 	return nil
@@ -154,16 +156,16 @@ func (c *RTC) SetUpdateInterrupt(enable bool) (err error) {
 	if !enable {
 		op = unix.RTC_UIE_OFF
 	}
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), uintptr(op), 0); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), uintptr(op), 0); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock update interrupt: %w", errno)
 	}
 	return nil
 }
 
-// Alarm returns the real-time clock's alarm time.
-func (c *RTC) Alarm() (t time.Time, err error) {
+// GetAlarm returns the real-time clock's alarm time.
+func (c *RTC) GetAlarm() (t time.Time, err error) {
 	tm := new(rtcTime)
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_ALM_READ, uintptr(unsafe.Pointer(tm))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_ALM_READ, uintptr(unsafe.Pointer(tm))); errno != 0 {
 		return time.Time{}, fmt.Errorf("failed to read real-time clock alarm: %w", errno)
 	}
 	return tm.time(), nil
@@ -172,16 +174,16 @@ func (c *RTC) Alarm() (t time.Time, err error) {
 // SetAlarm sets the real-time clock's alarm time.
 func (c *RTC) SetAlarm(t time.Time) (err error) {
 	tm := timeRtc{Time: t}.rtcTime()
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_ALM_SET, uintptr(unsafe.Pointer(tm))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_ALM_SET, uintptr(unsafe.Pointer(tm))); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock alarm: %w", errno)
 	}
 	return nil
 }
 
-// WakeAlarm returns the real-time clock's wake alarm time.
-func (c *RTC) WakeAlarm() (enabled bool, pending bool, t time.Time, err error) {
+// GetWakeAlarm returns the real-time clock's wake alarm time.
+func (c *RTC) GetWakeAlarm() (enabled bool, pending bool, t time.Time, err error) {
 	a := new(unix.RTCWkAlrm)
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_ALM_READ, uintptr(unsafe.Pointer(a))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_ALM_READ, uintptr(unsafe.Pointer(a))); errno != 0 {
 		return false, false, time.Time{}, fmt.Errorf("failed to read real-time clock wake alarm: %w", errno)
 	}
 	return a.Enabled == 1, a.Pending == 1, rtcTime{a.Time}.time(), nil
@@ -193,7 +195,7 @@ func (c *RTC) SetWakeAlarm(t time.Time) (err error) {
 		Enabled: 1,
 		Time:    *timeRtc{Time: t}.rtcTime(),
 	}
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_WKALM_SET, uintptr(unsafe.Pointer(a))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_WKALM_SET, uintptr(unsafe.Pointer(a))); errno != 0 {
 		return fmt.Errorf("failed to set real-time clock wake alarm: %w", errno)
 	}
 	return nil
@@ -205,7 +207,7 @@ func (c *RTC) CancelWakeAlarm() (err error) {
 		Enabled: 0,
 		Time:    *timeRtc{Time: time.Time{}}.rtcTime(),
 	}
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, c.f.Fd(), unix.RTC_WKALM_SET, uintptr(unsafe.Pointer(a))); errno != 0 {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(c.fd), unix.RTC_WKALM_SET, uintptr(unsafe.Pointer(a))); errno != 0 {
 		return fmt.Errorf("failed to cancel real-time clock wake alarm: %w", errno)
 	}
 	return nil

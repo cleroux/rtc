@@ -46,7 +46,7 @@ func TestTime(t *testing.T) {
 	pdrDate, ok := pdr["rtc_date"]
 	require.True(t, ok, "/proc/driver/rtc did not report rtc_date")
 
-	tm, err := Time("/dev/rtc")
+	tm, err := GetTime("/dev/rtc")
 	require.NoError(t, err)
 
 	assert.Equal(t, pdrTime, tm.Format("15:04:05"), "time read from RTC did not match the value reported by /proc/driver/rtc")
@@ -60,7 +60,7 @@ func TestAlarm(t *testing.T) {
 	pdrDate, ok := pdr["alrm_date"]
 	require.True(t, ok, "/proc/driver/rtc did not report alrm_time")
 
-	tm, err := Alarm("/dev/rtc")
+	tm, err := GetAlarm("/dev/rtc")
 	require.NoError(t, err)
 
 	assert.Equal(t, pdrTime, tm.Format("15:04:05"), "alarm time read from RTC did not match the value reported by /proc/driver/rtc")
@@ -78,19 +78,19 @@ func TestFrequency(t *testing.T) {
 	assert.GreaterOrEqual(t, pdrFreq, uint64(2))
 	assert.LessOrEqual(t, pdrFreq, uint64(8192))
 
-	freq, err := Frequency("/dev/rtc")
+	freq, err := GetFrequency("/dev/rtc")
 	require.NoError(t, err)
 	assert.Equal(t, uint(pdrFreq), freq, "frequency read from RTC did not match the value reported by /proc/driver/rtc")
 }
 
 func TestSetFrequency(t *testing.T) {
 	require.NoError(t, SetFrequency("/dev/rtc", 64))
-	f, err := Frequency("/dev/rtc")
+	f, err := GetFrequency("/dev/rtc")
 	require.NoError(t, err)
 	require.Equal(t, f, uint(64))
 
 	require.NoError(t, SetFrequency("/dev/rtc", 32))
-	f, err = Frequency("/dev/rtc")
+	f, err = GetFrequency("/dev/rtc")
 	require.NoError(t, err)
 	require.Equal(t, f, uint(32))
 }

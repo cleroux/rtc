@@ -21,7 +21,7 @@ if err != nil {
 }
 defer ticker.Stop()
 
-for tick := range ticker.Chan {
+for tick := range ticker.C {
     fmt.Printf("Tick.  Frame:%d Time:%v Delta:%v Missed:%d\n", tick.Frame, tick.Time, tick.Delta, tick.Missed)
 }
 ```
@@ -35,7 +35,7 @@ if err != nil {
 }
 defer timer.Stop()
 
-alarm := <-timer.Chan
+alarm := <-timer.C
 fmt.Printf("Alarm.  Time:%v\n", alarm.Time)
 ```
 
@@ -78,6 +78,10 @@ For example:
 ```
 `Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/usr/local/go/bin"
 ```
+
+## Contributing
+
+Issues and Pull Requests welcome!
 
 ## References
 
